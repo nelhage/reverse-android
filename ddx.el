@@ -72,7 +72,7 @@
                                         "throws" "catch" "class"
                                         "super" "var" "line"
                                         "registers" "annotation"
-                                        "end")) "\\>")
+                                        "end" "source" "inner")) "\\>")
          font-lock-preprocessor-face)
    (cons "^\\sw+:" font-lock-constant-face)
    (cons "\\<[vp][[:digit:]]+\\>" font-lock-variable-name-face)))
