@@ -1,0 +1,192 @@
+#!/usr/bin/env python
+import os
+import sys
+import re
+import os.path
+import pydot
+
+# pydot has horrible quoting bugs. Monkey-patch away their quoting
+# infrastructure with our own.
+
+class QuotedString(str):
+    """A string that has already been quoted for dot.
+
+    pydot assumes that it can quote a string multiple times and the
+    second and future calls will be no-ops. We implement this using a
+    simple subclass of `str' that lets us know we've already quoted
+    this string.
+    """
+    pass
+
+def do_quote(s):
+    if isinstance(s, QuotedString):
+        return s
+    if not isinstance(s, basestring):
+        return s
+
+    s = s.replace(' ', r'\ ').replace('"', r'\"')
+
+    return QuotedString('"%s"' % (s,))
+
+pydot.quote_if_necessary = do_quote
+
+def as_html(lines):
+    if not lines:
+        return ""
+    out = []
+    out.append('<<table border="0" cellborder="0" align="left">')
+    for line in lines:
+        out.append('<tr><td align="left">')
+        out.append(line[:-1].replace('\t', ' ').replace('<', '&lt;').replace('>', '&gt;'))
+        out.append('</td></tr>')
+    out.append('</table>>')
+
+    return QuotedString(''.join(out))
+
+
+if len(sys.argv) != 4:
+    print >>sys.stderr, "Usage: %s FILE.ddx FUNCTION OUT-FILE" % (sys.argv[0],)
+    print >>sys.stderr
+    print >>sys.stderr, "Output format will be auto-detected from the extension on OUT-FILE."
+    print >>sys.stderr, "FUNCTION may contain the encoded type signature:"
+    print >>sys.stderr, "  (e.g. 'doIt(IILjava/lang/String;)')"
+    sys.exit(1)
+
+(ddx, func, out) = sys.argv[1:]
+
+lines = []
+
+infile = open(ddx, 'r')
+
+for line in infile:
+    m = re.search(r'^\.method [a-z ]+ ([a-zA-Z0-9_<>]+\(.*)', line)
+    if m:
+        if m.group(1).startswith(func):
+            break
+
+header = []
+
+for line in infile:
+    if line.startswith(' ') or line.startswith('\t'):
+        lines.append(line)
+        break
+    else:
+        header.append(line)
+
+for line in infile:
+    if line.startswith('.end method'):
+        break
+    lines.append(line)
+
+gensym_cnt = 0
+def gensym():
+    global gensym_cnt
+    gensym_cnt += 1
+    return "tmp_" + str(gensym_cnt)
+
+def findExit(lines):
+    this_label = None
+    candidate  = False
+    return_blocks = set()
+
+    for line in lines:
+        m = re.search(r'^(\w+):', line)
+        if m:
+            if candidate:
+                return_blocks.add(this_label)
+            this_label = m.group(1)
+            candidate = False
+
+        if line.strip().startswith('return'):
+            candidate = True
+        else:
+            candidate = False
+    return return_blocks
+
+
+exitBlocks = findExit(lines)
+graph = pydot.Dot()
+was_goto = False
+in_switch = False
+
+code = header
+block = 'header'
+
+def switchBlock(to):
+    global block
+    if not was_goto:
+        graph.add_edge(pydot.Edge(block, to))
+    exitBlock()
+    block = to
+
+def exitBlock():
+    node = pydot.Node(block, shape='box', fontname='monospace')
+    node.set_label(as_html(code))
+    graph.add_node(node)
+    del code[:]
+
+def addEdgeTo(to,label='jmp'):
+    if to in exitBlocks:
+        to = gensym()
+        node = pydot.Node(to, label='return')
+        graph.add_node(node)
+
+    graph.add_edge(pydot.Edge(block, to, taillabel=label))
+
+switchBlock('entry')
+
+(NONE, SPARSE, PACKED) = range(3)
+
+for line in lines:
+    code.append(line)
+
+    if in_switch:
+        l = line.strip()
+        if l.startswith('default:'):
+            addEdgeTo(l.split()[-1], 'default')
+            in_switch = False
+            continue
+        else:
+            if in_switch == PACKED:
+                lbl = l.split()[0]
+                case = l.split()[-1]
+            else: # SPARSE
+                lbl = l.split()[-1]
+                case = l.split()[0]
+            addEdgeTo(lbl, case)
+            continue
+    
+    m = re.search(r'^(\w+):', line)
+    if m:
+        del code[-1]
+        switchBlock(m.group(1))
+        continue
+    was_goto = False
+
+    insn = line.strip()
+
+    if insn.startswith('if-'):
+        to = insn.split(",")[-1]
+        addEdgeTo(to, 'true')
+        switchBlock(gensym())
+
+    if insn.startswith('return'):
+        addEdgeTo('return', '')
+        was_goto = True
+    if insn.startswith('throw'):
+        was_goto = True
+    elif insn.startswith('packed-switch'):
+        in_switch = PACKED
+        was_goto = True
+    elif insn.startswith('sparse-switch'):
+        in_switch = SPARSE
+        was_goto = True
+    elif insn.startswith('goto'):
+        addEdgeTo(insn.split()[-1], 'goto')
+        was_goto = True
+
+if code:
+    exitBlock()
+
+extn = out[out.rindex(".")+1:]
+graph.write(out, format=extn)
