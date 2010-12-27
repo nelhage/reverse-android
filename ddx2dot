@@ -87,16 +87,21 @@ def gensym():
 def findExit(lines):
     this_label = None
     candidate  = False
-    return_blocks = set()
+    return_blocks = dict()
+    code = []
 
     for line in lines:
         m = re.search(r'^(\w+):', line)
         if m:
             if candidate:
-                return_blocks.add(this_label)
+                return_blocks[this_label] = code
+            code = []
             this_label = m.group(1)
             candidate = False
+            continue
 
+        code.append(line)
+        
         if line.strip().startswith('return'):
             candidate = True
         else:
@@ -127,9 +132,10 @@ def exitBlock():
 
 def addEdgeTo(to,label='jmp'):
     if to in exitBlocks:
-        to = gensym()
-        node = pydot.Node(to, label='return')
+        tmp = gensym()
+        node = pydot.Node(tmp, label=as_html(exitBlocks[to]))
         graph.add_node(node)
+        to = tmp
 
     graph.add_edge(pydot.Edge(block, to, taillabel=label))
 
