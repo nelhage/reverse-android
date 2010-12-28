@@ -72,7 +72,8 @@
                                         "throws" "catch" "class"
                                         "super" "var" "line"
                                         "registers" "annotation"
-                                        "end" "source" "inner")) "\\>")
+                                        "end" "source" "inner"
+                                        "local" "parameter")) "\\>")
          font-lock-preprocessor-face)
    (cons "\\<[vp][[:digit:]]+\\>" font-lock-variable-name-face)))
 
