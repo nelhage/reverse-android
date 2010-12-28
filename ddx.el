@@ -74,7 +74,6 @@
                                         "registers" "annotation"
                                         "end" "source" "inner")) "\\>")
          font-lock-preprocessor-face)
-   (cons "^\\sw+:" font-lock-constant-face)
    (cons "\\<[vp][[:digit:]]+\\>" font-lock-variable-name-face)))
 
 (defvar ddx-mode-map
@@ -124,12 +123,15 @@
 (defvar ddx-all-labels nil
   "All labels in the current buffer")
 
+(defvar ddx-label-re "^\\(\\sw+\\):"
+  "A regular expression for the definition site of a label")
+
 (defun ddx-collect-labels ()
   (set (make-local-variable 'ddx-all-labels)
        (make-hash-table :test 'equal))
   (save-excursion
     (beginning-of-buffer)
-     (while (re-search-forward "^\\(\\sw+\\):" nil t)
+     (while (re-search-forward ddx-label-re nil t)
        (let ((l (match-string-no-properties 1)))
          (puthash l t ddx-all-labels)))))
 
@@ -160,12 +162,18 @@
    "Major mode to edit decompiled DEX files."
    (set (make-local-variable 'font-lock-defaults)
         '(ddx-mode-font-lock-keywords))
+   (font-lock-add-keywords nil (list (cons ddx-label-re font-lock-constant-face)))
    (use-local-map ddx-mode-map)
    (set-syntax-table ddx-mode-syntax-table)
    (set (make-local-variable 'ddx-highlighted-label) nil)
    (ddx-collect-labels)
    (ddx-reset-timer)
    (require 'javadoc))
+
+(defun smali-mode ()
+  (interactive)
+  (let ((ddx-label-re "^\s *:\\([a-zA-Z0-9_]+\\)"))
+    (ddx-mode)))
 
 (add-to-list 'auto-mode-alist (cons "\\.ddx$" 'ddx-mode))
 
