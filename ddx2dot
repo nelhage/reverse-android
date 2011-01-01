@@ -194,5 +194,8 @@ for line in lines:
 if code:
     exitBlock()
 
-extn = out[out.rindex(".")+1:]
+if '.' not in out:
+    extn = 'dot'
+else:
+    extn = out[out.rindex(".")+1:]
 graph.write(out, format=extn)
