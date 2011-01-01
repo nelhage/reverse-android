@@ -84,6 +84,13 @@
     map)
   "Keymap for DDX major mode")
 
+(defvar smali-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map ddx-mode-map)
+    (define-key map (kbd "M-.") 'ddx-smali-goto-label)
+    map)
+  "Keymap for smali major mode")
+
 (defvar ddx-mode-syntax-table
   (let ((tbl (make-syntax-table)))
     (modify-syntax-entry ?_ "w" tbl)
@@ -91,12 +98,25 @@
     (modify-syntax-entry ?\n ">" tbl)
     tbl))
 
+(defun ddx-indent-line ()
+  "Indent the current line as DDX code"
+  (interactive)
+  
+  )
+
 (defun ddx-goto-label (&optional label)
   (interactive)
   (if (not label)
       (setq label (thing-at-point 'word)))
   (beginning-of-buffer)
   (re-search-forward (concat "^" label ":")))
+
+(defun ddx-smali-goto-label (&optional label)
+  (interactive)
+  (if (not label)
+      (setq label (thing-at-point 'word)))
+  (beginning-of-buffer)
+  (re-search-forward (concat "^\\s +:" label "\\>")))
 
 (defface ddx-label-highlight
   '((t :background "#003"))
@@ -172,12 +192,16 @@
    (ddx-reset-timer)
    (require 'javadoc))
 
-(defun smali-mode ()
-  (interactive)
-  (let ((ddx-label-re "\\s :\\([a-zA-Z0-9_]+\\)"))
-    (ddx-mode)))
+(define-derived-mode smali-mode ddx-mode "smali"
+  "Major mode to edit .smali assembly files"
+  (set (make-local-variable 'ddx-label-re)
+       "\\s :\\([a-zA-Z0-9_]+\\)")
+  (ddx-collect-labels)
+  (font-lock-add-keywords nil (list (cons ddx-label-re font-lock-constant-face)))
+  (use-local-map smali-mode-map))
 
 (add-to-list 'auto-mode-alist (cons "\\.ddx$" 'ddx-mode))
+(add-to-list 'auto-mode-alist (cons "\\.smali$" 'smali-mode))
 
 (defmacro save-match-data (&rest body)
   "Execute BODY, preserving any pre-existing match data"
