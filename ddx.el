@@ -174,7 +174,7 @@
 
 (defun smali-mode ()
   (interactive)
-  (let ((ddx-label-re "^\s *:\\([a-zA-Z0-9_]+\\)"))
+  (let ((ddx-label-re "\\s :\\([a-zA-Z0-9_]+\\)"))
     (ddx-mode)))
 
 (add-to-list 'auto-mode-alist (cons "\\.ddx$" 'ddx-mode))
