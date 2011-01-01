@@ -63,17 +63,18 @@
 
 (defvar ddx-mode-font-lock-keywords
   (list
+   (cons "\\(^\\|\\s \\);.*" font-lock-comment-face)
    (cons (concat "\\<" (regexp-opt ddx-dex-opcode-list) "\\>")
          font-lock-builtin-face)
    (cons (concat "\\<" (regexp-opt '("private" "public" "static" "final")) "\\>")
          font-lock-keyword-face)
-   (cons "[#;].*" font-lock-comment-face)
    (cons (concat "\\.\\<" (regexp-opt '("field" "method" "limit"
                                         "throws" "catch" "class"
                                         "super" "var" "line"
                                         "registers" "annotation"
                                         "end" "source" "inner"
-                                        "local" "parameter")) "\\>")
+                                        "local" "parameter"
+                                        "catchall")) "\\>")
          font-lock-preprocessor-face)
    (cons "\\<[vp][[:digit:]]+\\>" font-lock-variable-name-face)))
 
@@ -86,7 +87,7 @@
 (defvar ddx-mode-syntax-table
   (let ((tbl (make-syntax-table)))
     (modify-syntax-entry ?_ "w" tbl)
-    (modify-syntax-entry ?\; "<" tbl)
+    (modify-syntax-entry ?\# "<" tbl)
     (modify-syntax-entry ?\n ">" tbl)
     tbl))
 
