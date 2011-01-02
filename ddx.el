@@ -127,7 +127,7 @@
 (defun ddx-highlight-label (label)
   (interactive)
   (save-excursion
-    (beginning-of-buffer)
+    (goto-char (point-min))
     (while (re-search-forward (concat "\\<" label "\\>") nil t)
       (let ((start (match-beginning 0))
             (end   (match-end 0)))
