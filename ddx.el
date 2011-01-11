@@ -81,6 +81,8 @@
 (defvar ddx-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "M-.") 'ddx-goto-label)
+    (define-key map (kbd "M-n") 'ddx-label-goto-next-reference)
+    (define-key map (kbd "M-p") 'ddx-label-goto-prev-reference)
     map)
   "Keymap for DDX major mode")
 
@@ -101,7 +103,6 @@
 (defun ddx-indent-line ()
   "Indent the current line as DDX code"
   (interactive)
-  
   )
 
 (defun ddx-goto-label (&optional label)
@@ -128,19 +129,49 @@
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (while (re-search-forward (concat "\\<" label "\\>") nil t)
-      (let ((start (match-beginning 0))
-            (end   (match-end 0)))
-        (let ((ov (make-overlay start end)))
-          (overlay-put ov 'ddx-label-highlight t)
-          (overlay-put ov 'face 'ddx-label-highlight))))))
+    (let ((marks ()))
+      (while (re-search-forward (concat "\\<" label "\\>") nil t)
+        (let ((start (match-beginning 0))
+              (end   (match-end 0)))
+          (let ((ov (make-overlay start end)))
+            (setq marks (cons (copy-marker start) marks))
+            (overlay-put ov 'ddx-label-highlight t)
+            (overlay-put ov 'face 'ddx-label-highlight))))
+      (setq ddx-highlighted-label-marks (vconcat (reverse marks)))))
+  (let ((i 0))
+    (while (and (< i (length ddx-highlighted-label-marks))
+                (< (point)
+                   (aref ddx-highlighted-label-marks i)))
+      (setq i (+ 1 i)))))
+
+(defun ddx-label-goto-next-reference ()
+  (interactive)
+  (ddx-label-move-reference 1))
+
+(defun ddx-label-goto-prev-reference ()
+  (interactive)
+  (ddx-label-move-reference -1))
+
+(defun ddx-label-move-reference (delta)
+  (when ddx-highlighted-label-marks
+    (setq ddx-highlighted-label-index
+          (mod (+ ddx-highlighted-label-index delta)
+               (length ddx-highlighted-label-marks)))
+    (goto-char (aref ddx-highlighted-label-marks
+                     ddx-highlighted-label-index))))
 
 (defun ddx-remove-highlights ()
   (interactive)
-  (remove-overlays (point-min) (point-max) 'ddx-label-highlight t))
+  (remove-overlays (point-min) (point-max) 'ddx-label-highlight t)
+  (setq ddx-highlighted-label-marks nil))
 
 (defvar ddx-highlighted-label nil
   "The currently-highlighted label")
+
+(defvar ddx-highlighted-label-marks nil
+  "A vector of marks for each highlighted label")
+(defvar ddx-highlighted-label-index 0
+  "The index in `ddx-highlighted-label-marks` of the current label.")
 
 (defvar ddx-all-labels nil
   "All labels in the current buffer")
@@ -188,6 +219,8 @@
    (use-local-map ddx-mode-map)
    (set-syntax-table ddx-mode-syntax-table)
    (set (make-local-variable 'ddx-highlighted-label) nil)
+   (set (make-local-variable 'ddx-highlighted-label-marks) nil)
+   (set (make-local-variable 'ddx-highlighted-label-index) 0)
    (ddx-collect-labels)
    (ddx-reset-timer)
    (require 'javadoc))
