@@ -79,26 +79,26 @@
    (cons "\\<[vp][[:digit:]]+\\>" font-lock-variable-name-face)))
 
 (defvar ddx-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "M-.") 'ddx-goto-label)
-    (define-key map (kbd "M-n") 'ddx-label-goto-next-reference)
-    (define-key map (kbd "M-p") 'ddx-label-goto-prev-reference)
-    map)
+  (let ((ddx-mode-map (make-sparse-keymap)))
+    (define-key ddx-mode-map (kbd "M-.") 'ddx-goto-label)
+    (define-key ddx-mode-map (kbd "M-n") 'ddx-label-goto-next-reference)
+    (define-key ddx-mode-map (kbd "M-p") 'ddx-label-goto-prev-reference)
+    ddx-mode-map)
   "Keymap for DDX major mode")
 
 (defvar smali-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map ddx-mode-map)
-    (define-key map (kbd "M-.") 'ddx-smali-goto-label)
-    map)
+  (let ((smali-mode-map (make-sparse-keymap)))
+    (set-keymap-parent smali-mode-map ddx-mode-map)
+    (define-key smali-mode-map (kbd "M-.") 'ddx-smali-goto-label)
+    smali-mode-map)
   "Keymap for smali major mode")
 
 (defvar ddx-mode-syntax-table
-  (let ((tbl (make-syntax-table)))
-    (modify-syntax-entry ?_ "w" tbl)
-    (modify-syntax-entry ?\# "<" tbl)
-    (modify-syntax-entry ?\n ">" tbl)
-    tbl))
+  (let ((ddx-mode-syntax-table (make-syntax-table)))
+    (modify-syntax-entry ?_ "w" ddx-mode-syntax-table)
+    (modify-syntax-entry ?\# "<" ddx-mode-syntax-table)
+    (modify-syntax-entry ?\n ">" ddx-mode-syntax-table)
+    ddx-mode-syntax-table))
 
 (defun ddx-indent-line ()
   "Indent the current line as DDX code"
