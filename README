@@ -1,0 +1,31 @@
+Reverse Android: Some miscellaneous Android reverse-engineering tools.
+
+This repository contains some tools I've written for reverse-engineering Android
+applications, as well as any that I may write in the future.
+
+You can find the initial announcement of these tools on my blog:
+http://blog.nelhage.com/2010/12/some-android-reverse-engineering-tools/
+
+The contents so far are:
+
+- ddx.el: An emacs mode for working with Android assembly. Includes two related
+  modes, ddx-mode and smali-mode, for working with the output of Dedexer
+  (http://dedexer.sourceforge.net/) and baksmali
+  (http://code.google.com/p/smali/). The mode was written for reading decompiled
+  assembly, but may also be useful for people writing smali assembly.
+
+- ddx2dot: A Python script for rendering methods in dedexer-produced assembly
+  files to control-flow graphs using dot (http://www.graphviz.org/).
+
+  Usage is 'ddx2dot FILE.ddx METHOD-NAME OUT-FILE'
+
+  METHOD-NAME should be a prefix of the fully type-qualified name of the desired
+  method. The output format will be detected from the extension on OUT-FILE; If
+  auto-detection fails, the program will write dot source code.
+
+  Sample output can be seen at
+  <http://blog.nelhage.com/wp-content/uploads/2010/12/parseToken.png>
+
+  Currently it only supports rendering a single method at a time. If there's
+  interest in rendering an entire class to a giant image, I might implement
+  that.
