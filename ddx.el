@@ -222,8 +222,7 @@
    (set (make-local-variable 'ddx-highlighted-label-marks) nil)
    (set (make-local-variable 'ddx-highlighted-label-index) 0)
    (ddx-collect-labels)
-   (ddx-reset-timer)
-   (require 'javadoc))
+   (ddx-reset-timer))
 
 (define-derived-mode smali-mode ddx-mode "smali"
   "Major mode to edit .smali assembly files"
