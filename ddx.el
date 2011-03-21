@@ -108,14 +108,14 @@
 (defun ddx-goto-label (&optional label)
   (interactive)
   (if (not label)
-      (setq label (thing-at-point 'word)))
+      (setq label (ddx-label-at-point)))
   (beginning-of-buffer)
   (re-search-forward (concat "^" label ":")))
 
 (defun ddx-smali-goto-label (&optional label)
   (interactive)
   (if (not label)
-      (setq label (thing-at-point 'word)))
+      (setq label (ddx-label-at-point)))
   (beginning-of-buffer)
   (re-search-forward (concat "^\\s +:" label "\\>")))
 
