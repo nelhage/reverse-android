@@ -91,7 +91,8 @@ def findExit(lines):
     code = []
 
     for line in lines:
-        m = re.search(r'^(\w+):', line)
+        if not line.strip(): continue
+        m = re.search(r'^\s*(:\w+)', line)
         if m:
             if candidate:
                 return_blocks[this_label] = code
@@ -101,7 +102,7 @@ def findExit(lines):
             continue
 
         code.append(line)
-        
+
         if line.strip().startswith('return'):
             candidate = True
         else:
@@ -143,26 +144,33 @@ switchBlock('entry')
 
 (NONE, SPARSE, PACKED) = range(3)
 
+switch_table = {}
+switch_idx = None
+
 for line in lines:
+    if not line.strip(): continue
     code.append(line)
 
     if in_switch:
         l = line.strip()
-        if l.startswith('default:'):
-            addEdgeTo(l.split()[-1], 'default')
+        if l.startswith('.end'):
+            was_goto = True
             in_switch = False
+            code = []
             continue
         else:
             if in_switch == PACKED:
-                lbl = l.split()[0]
-                case = l.split()[-1]
+                lbl = l
+                case = hex(switch_idx)
+                switch_idx += 1
             else: # SPARSE
-                lbl = l.split()[-1]
-                case = l.split()[0]
+                m = re.search(r'(0x[a-fA-F0-9]+)\s*->\s*(:\w+)', l)
+                lbl = m.group(2)
+                case = m.group(1)
             addEdgeTo(lbl, case)
             continue
-    
-    m = re.search(r'^(\w+):', line)
+
+    m = re.search(r'^\s*(:\w+)', line)
     if m:
         del code[-1]
         switchBlock(m.group(1))
@@ -172,7 +180,7 @@ for line in lines:
     insn = line.strip()
 
     if insn.startswith('if-'):
-        to = insn.split(",")[-1]
+        to = insn.split()[-1]
         addEdgeTo(to, 'true')
         switchBlock(gensym())
 
@@ -181,15 +189,21 @@ for line in lines:
         was_goto = True
     if insn.startswith('throw'):
         was_goto = True
-    elif insn.startswith('packed-switch'):
-        in_switch = PACKED
-        was_goto = True
-    elif insn.startswith('sparse-switch'):
-        in_switch = SPARSE
-        was_goto = True
+    elif insn.startswith('packed-switch') or \
+            insn.startswith('sparse-switch'):
+        label = insn.split()[-1]
+        switch_table[label] = block
+        switchBlock(gensym())
     elif insn.startswith('goto'):
         addEdgeTo(insn.split()[-1], 'goto')
         was_goto = True
+    elif insn.startswith('.sparse-switch'):
+        in_switch = SPARSE
+        block = switch_table[block]
+    elif insn.startswith('.packed-switch'):
+        in_switch = PACKED
+        switch_idx = int(insn.split()[-1], 16)
+        block = switch_table[block]
 
 if code:
     exitBlock()
